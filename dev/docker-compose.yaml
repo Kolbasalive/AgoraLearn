@@ -1,0 +1,51 @@
+services:
+  mongoDB:
+    image: mongo:latest
+    container_name: mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: agora-mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - agora-net
+    volumes:
+      - mongo-data:/data/db
+
+  db:
+    image: postgres:latest
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: agora-postgres
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - agora-net
+
+  agora:
+    image: agora-learn:latest
+    container_name: agora-learn
+    restart: unless-stopped
+    depends_on:
+      - mongo
+      - postgres
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://admin:admin@mongo:27017/agora-mongo
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agora-postgres
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    networks:
+      - agora-net
+
+networks:
+  agora-net:
+    driver: bridge
