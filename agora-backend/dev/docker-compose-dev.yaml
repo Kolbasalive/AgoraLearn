@@ -1,0 +1,20 @@
+services:
+  mongo-dev:
+    image: mongo:latest
+    container_name: mongo-dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+
+  postgres-dev:
+    image: postgres:latest
+    container_name: postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: agora-postgres
+    ports:
+      - "5431:5432"
+    volumes:
+      - ./dev/postgres-data:/var/lib/postgresql/data
