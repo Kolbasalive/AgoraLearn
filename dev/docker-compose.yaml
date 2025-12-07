@@ -1,10 +1,13 @@
+# Создание глобальной сети:
+# docker network create agora-net
+# docker run --name cont-name-agora-test-front -p 3000:80 --network agora-net agora-frontend
 services:
-  mongoDB:
+  mongo:
     image: mongo:latest
     container_name: mongo
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_USERNAME: mongo
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_INITDB_DATABASE: agora-mongo
     ports:
@@ -14,7 +17,7 @@ services:
     volumes:
       - mongo-data:/data/db
 
-  db:
+  postgres:
     image: postgres:latest
     container_name: postgres
     restart: unless-stopped
@@ -23,29 +26,61 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: agora-postgres
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
       - agora-net
 
-  agora:
-    image: agora-learn:latest
-    container_name: agora-learn
+  agora-backend:
+    image: agora-back:latest
+    container_name: agora-backend
     restart: unless-stopped
     depends_on:
       - mongo
       - postgres
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://admin:admin@mongo:27017/agora-mongo
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:admin@mongo:27017/agora-mongo
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agora-postgres
-      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: admin
     ports:
       - "8080:8080"
     networks:
       - agora-net
 
+  frontend:
+    build:
+      context: ../agora-frontend
+    container_name: agora-frontend
+    ports:
+      - "3000:80"
+    networks:
+      - agora-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: agora-gateway
+    restart: unless-stopped
+    depends_on:
+      - agora-backend
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - frontend-build:/usr/share/nginx/html
+    networks:
+      - agora-net
+
 networks:
   agora-net:
-    driver: bridge
+    external: true
+# Локальная сеть:
+#networks:
+#  agora-net:
+#    driver: bridge
+
+volumes:
+  mongo-data:
+  postgres-data:
+  frontend-build:
